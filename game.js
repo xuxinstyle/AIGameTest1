@@ -7,15 +7,33 @@
   const H = canvas.height;
 
   const elScore = document.getElementById("score");
+  const elStage = document.getElementById("stage");
+  const elStageTarget = document.getElementById("stageTarget");
   const elLives = document.getElementById("lives");
   const elWave = document.getElementById("wave");
   const elHint = document.getElementById("hint");
 
+  /** 累计得分达到对应值后通关该关并进入下一关（共 10 关，之后为胜利结算） */
+  const LEVEL_TARGETS = [
+    200, // 第 1 关：熟悉操作与基础敌机
+    500, // 第 2 关：敌机更密、走位要求提高
+    900, // 第 3 关：引入更多之字敌机与速度
+    1400, // 第 4 关：厚血敌机比例上升
+    2000, // 第 5 关：中场难度
+    2700, // 第 6 关：弹幕压力
+    3500, // 第 7 关：高速下坠
+    4500, // 第 8 关：精英波次感
+    5700, // 第 9 关：终盘前奏
+    7200, // 第 10 关：全线压迫，通关后游戏胜利
+  ];
+
   const keys = new Set();
-  let state = "title"; // title | play | gameover
+  let state = "title"; // title | play | gameover | victory
   let score = 0;
   let lives = 3;
   let wave = 1;
+  let stage = 1;
+  let levelClearTimer = 0;
   let frame = 0;
   let spawnTimer = 0;
   let stars = [];
@@ -54,6 +72,8 @@
     score = 0;
     lives = 3;
     wave = 1;
+    stage = 1;
+    levelClearTimer = 0;
     frame = 0;
     spawnTimer = 0;
     player.x = W / 2;
@@ -66,12 +86,39 @@
 
   function updateHud() {
     elScore.textContent = String(score);
+    elStage.textContent = String(Math.min(stage, LEVEL_TARGETS.length));
+    if (stage <= LEVEL_TARGETS.length) {
+      elStageTarget.textContent = String(LEVEL_TARGETS[stage - 1]);
+    } else {
+      elStageTarget.textContent = "—";
+    }
     elLives.textContent = String(lives);
     elWave.textContent = String(wave);
   }
 
+  function tryAdvanceStage() {
+    if (state !== "play") return;
+    if (stage > LEVEL_TARGETS.length) return;
+    if (score < LEVEL_TARGETS[stage - 1]) return;
+
+    stage++;
+    wave = Math.min(wave + 1, 99);
+    bullets = [];
+    enemies = [];
+    player.shootCd = 0;
+    updateHud();
+
+    if (stage > LEVEL_TARGETS.length) {
+      state = "victory";
+      elHint.textContent = "Enter 返回标题 / 重开";
+      levelClearTimer = 0;
+      return;
+    }
+    levelClearTimer = 96;
+  }
+
   function spawnEnemy() {
-    const tier = Math.min(wave, 6);
+    const tier = Math.min(wave + stage - 1, 8);
     const w = 36 + tier * 2;
     const h = 32 + tier;
     enemies.push({
@@ -81,8 +128,8 @@
       h,
       vx: rand(-1.2, 1.2) * (0.5 + tier * 0.08),
       vy: rand(1.8, 2.8) + tier * 0.15,
-      hp: tier >= 4 ? 2 : 1,
-      maxHp: tier >= 4 ? 2 : 1,
+      hp: tier >= 7 ? 3 : tier >= 4 ? 2 : 1,
+      maxHp: tier >= 7 ? 3 : tier >= 4 ? 2 : 1,
       kind: Math.random() < 0.15 ? "zig" : "straight",
       phase: rand(0, Math.PI * 2),
     });
@@ -279,6 +326,39 @@
     ctx.fillText("按 Enter 重新开始", W / 2, H / 2 + 44);
   }
 
+  function drawVictory() {
+    ctx.fillStyle = "rgba(0,0,0,0.65)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#7ee8ff";
+    ctx.font = "bold 28px Segoe UI, PingFang SC, Microsoft YaHei, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("全关卡通关", W / 2, H / 2 - 36);
+    ctx.fillStyle = "#c8d4e8";
+    ctx.font = "18px Segoe UI, PingFang SC, Microsoft YaHei, sans-serif";
+    ctx.fillText("最终得分 " + score, W / 2, H / 2 + 2);
+    ctx.font = "15px Segoe UI, PingFang SC, Microsoft YaHei, sans-serif";
+    ctx.fillStyle = "#8aa0c0";
+    ctx.fillText("按 Enter 重新开始", W / 2, H / 2 + 38);
+  }
+
+  function drawLevelClearBanner() {
+    ctx.fillStyle = "rgba(0, 20, 40, 0.72)";
+    ctx.fillRect(0, H / 2 - 52, W, 104);
+    ctx.strokeStyle = "rgba(126, 232, 255, 0.45)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, H / 2 - 51, W - 2, 102);
+    ctx.fillStyle = "#e8f4ff";
+    ctx.font = "bold 22px Segoe UI, PingFang SC, Microsoft YaHei, sans-serif";
+    ctx.textAlign = "center";
+    const n = stage - 1;
+    ctx.fillText("第 " + n + " 关 通关", W / 2, H / 2 - 8);
+    ctx.font = "15px Segoe UI, PingFang SC, Microsoft YaHei, sans-serif";
+    ctx.fillStyle = "#9bb8d8";
+    if (stage <= LEVEL_TARGETS.length) {
+      ctx.fillText("下一关目标得分 " + LEVEL_TARGETS[stage - 1], W / 2, H / 2 + 22);
+    }
+  }
+
   function updatePlay() {
     frame++;
 
@@ -289,6 +369,19 @@
         s.y = 0;
         s.x = Math.random() * W;
       }
+    }
+
+    if (levelClearTimer > 0) {
+      levelClearTimer--;
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+      if (levelClearTimer === 0) tryAdvanceStage();
+      return;
     }
 
     // player move
@@ -313,7 +406,7 @@
     }
 
     // spawn
-    const interval = Math.max(22, 55 - wave * 3);
+    const interval = Math.max(16, 55 - wave * 3 - (stage - 1) * 2);
     spawnTimer++;
     if (spawnTimer >= interval) {
       spawnTimer = 0;
@@ -348,6 +441,7 @@
             burst(e.x, e.y, "#ff88aa", 14);
             enemies.splice(i, 1);
             updateHud();
+            tryAdvanceStage();
           }
           break;
         }
@@ -391,9 +485,11 @@
       for (const e of enemies) drawEnemy(e);
       drawParticles();
       drawPlayer();
+      if (levelClearTimer > 0) drawLevelClearBanner();
     } else {
       drawStars();
       if (state === "title") drawTitle();
+      else if (state === "victory") drawVictory();
       else drawGameOver();
     }
 
@@ -403,7 +499,7 @@
   window.addEventListener("keydown", (ev) => {
     const k = ev.key;
     if (k === "Enter") {
-      if (state === "title" || state === "gameover") {
+      if (state === "title" || state === "gameover" || state === "victory") {
         resetGame();
         state = "play";
         elHint.textContent = "← → 或 A D 移动 · 空格 射击";
