@@ -1,0 +1,12 @@
+{
+  "name": "aigametest1",
+  "private": true,
+  "description": "Robot vertical shooter — 请在仓库根目录执行 npm start，或使用正确路径 AIGameTest1（不是 AIGameTest）",
+  "scripts": {
+    "start": "serve . -l 3000",
+    "serve": "serve ."
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
