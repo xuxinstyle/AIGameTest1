@@ -23,8 +23,8 @@
   const player = {
     x: W / 2,
     y: H - 90,
-    w: 44,
-    h: 52,
+    w: 48,
+    h: 56,
     speed: 6,
     shootCd: 0,
   };
@@ -143,67 +143,113 @@
     ctx.save();
     ctx.translate(x, y);
 
-    // glow
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 40);
-    g.addColorStop(0, "rgba(80, 200, 255, 0.35)");
-    g.addColorStop(1, "rgba(80, 200, 255, 0)");
-    ctx.fillStyle = g;
+    const fus = w * 0.22;
+    const noseY = -h * 0.5 + 3;
+    const tailY = h * 0.47;
+    const wingBackY = h * 0.22;
+    const wingTipX = w * 0.48 + 6;
+
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    const amb = ctx.createRadialGradient(0, -h * 0.1, 0, 0, 0, h * 0.65);
+    amb.addColorStop(0, "rgba(120, 160, 200, 0.2)");
+    amb.addColorStop(1, "rgba(40, 60, 90, 0)");
+    ctx.fillStyle = amb;
     ctx.beginPath();
-    ctx.arc(0, 0, 40, 0, Math.PI * 2);
+    ctx.ellipse(0, h * 0.05, wingTipX + 6, h * 0.55, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // body
-    ctx.fillStyle = "#3a5a8a";
-    ctx.strokeStyle = "#7ee8ff";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(-w / 2 + 6, -h / 2 + 8, w - 12, h - 18, 6);
+    function wing(side) {
+      const s = side;
+      ctx.beginPath();
+      ctx.moveTo(s * fus * 0.85, -h * 0.06);
+      ctx.lineTo(s * wingTipX, wingBackY - h * 0.04);
+      ctx.lineTo(s * (wingTipX - 4), wingBackY + h * 0.1);
+      ctx.lineTo(s * fus * 1.05, h * 0.12);
+      ctx.lineTo(s * fus * 0.75, -h * 0.02);
+      ctx.closePath();
+    }
+
+    ctx.fillStyle = "#3d4754";
+    ctx.strokeStyle = "#1e252e";
+    ctx.lineWidth = 1.25;
+    wing(1);
+    ctx.fill();
+    ctx.stroke();
+    wing(-1);
     ctx.fill();
     ctx.stroke();
 
-    // head
-    ctx.fillStyle = "#5a7aaa";
+    ctx.fillStyle = "#5a6572";
+    ctx.strokeStyle = "#2a3138";
     ctx.beginPath();
-    ctx.arc(0, -h / 2 + 10, 12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#9ef0ff";
-    ctx.stroke();
-
-    // eyes
-    ctx.fillStyle = "#00f0ff";
-    ctx.beginPath();
-    ctx.arc(-5, -h / 2 + 8, 3, 0, Math.PI * 2);
-    ctx.arc(5, -h / 2 + 8, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // wings
-    ctx.fillStyle = "#2d4a78";
-    ctx.beginPath();
-    ctx.moveTo(-w / 2, 4);
-    ctx.lineTo(-w / 2 - 14, 18);
-    ctx.lineTo(-w / 2 + 4, 14);
+    ctx.moveTo(0, noseY);
+    ctx.bezierCurveTo(
+      fus * 0.55,
+      noseY + h * 0.1,
+      fus,
+      -h * 0.12,
+      fus,
+      h * 0.06
+    );
+    ctx.lineTo(fus * 0.9, tailY - h * 0.08);
+    ctx.quadraticCurveTo(0, tailY + 1, -fus * 0.9, tailY - h * 0.08);
+    ctx.lineTo(-fus, h * 0.06);
+    ctx.bezierCurveTo(-fus, -h * 0.12, -fus * 0.55, noseY + h * 0.1, 0, noseY);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "#5ab0e0";
     ctx.stroke();
 
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(w / 2, 4);
-    ctx.lineTo(w / 2 + 14, 18);
-    ctx.lineTo(w / 2 - 4, 14);
-    ctx.closePath();
+    ctx.moveTo(0, noseY + h * 0.06);
+    ctx.lineTo(0, tailY - h * 0.14);
+    ctx.stroke();
+
+    const can = ctx.createLinearGradient(-fus, -h * 0.28, fus, -h * 0.14);
+    can.addColorStop(0, "#1a3548");
+    can.addColorStop(0.45, "#4a7a9a");
+    can.addColorStop(1, "#2a5068");
+    ctx.fillStyle = can;
+    ctx.strokeStyle = "#6a9ab8";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(0, -h * 0.2, fus * 0.62, h * 0.085, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // thruster
-    const flicker = 0.6 + Math.sin(frame * 0.4) * 0.2;
-    ctx.fillStyle = `rgba(255, 140, 60, ${flicker})`;
+    ctx.fillStyle = "#2a3238";
     ctx.beginPath();
-    ctx.moveTo(-6, h / 2 - 4);
-    ctx.lineTo(0, h / 2 + 12 + Math.sin(frame * 0.5) * 4);
-    ctx.lineTo(6, h / 2 - 4);
+    ctx.moveTo(0, tailY - h * 0.02);
+    ctx.lineTo(-fus * 0.35, tailY);
+    ctx.lineTo(0, tailY + h * 0.06);
+    ctx.lineTo(fus * 0.35, tailY);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = "#1a2026";
+    ctx.stroke();
+
+    const flick = 0.55 + Math.sin(frame * 0.45) * 0.22;
+    const plume = 10 + Math.sin(frame * 0.55) * 3;
+    function exhaust(dx) {
+      const g = ctx.createLinearGradient(dx, tailY - 2, dx, tailY + plume + 6);
+      g.addColorStop(0, `rgba(255,220,120,${flick})`);
+      g.addColorStop(0.35, `rgba(255,120,40,${flick * 0.85})`);
+      g.addColorStop(1, "rgba(255,80,20,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(dx - 3, tailY - 3);
+      ctx.lineTo(dx + 3, tailY - 3);
+      ctx.lineTo(dx + 5, tailY + plume);
+      ctx.lineTo(0, tailY + plume + 4);
+      ctx.lineTo(dx - 5, tailY + plume);
+      ctx.closePath();
+      ctx.fill();
+    }
+    exhaust(-fus * 0.42);
+    exhaust(fus * 0.42);
 
     ctx.restore();
   }
@@ -261,7 +307,7 @@
     ctx.font = "16px Segoe UI, PingFang SC, Microsoft YaHei, sans-serif";
     ctx.fillStyle = "#9bb8d8";
     ctx.fillText("按 Enter 开始", W / 2, H / 2 + 10);
-    ctx.fillText("← → / A D 移动  ·  空格 射击", W / 2, H / 2 + 38);
+    ctx.fillText("← → / A D 移动  ·  机炮自动开火", W / 2, H / 2 + 38);
   }
 
   function drawGameOver() {
@@ -298,10 +344,11 @@
     player.x += dx * player.speed;
     player.x = Math.max(player.w / 2, Math.min(W - player.w / 2, player.x));
 
-    // shoot
+    // shoot (auto-fire while playing)
     if (player.shootCd > 0) player.shootCd--;
-    if ((keys.has(" ") || keys.has("Spacebar")) && player.shootCd <= 0) {
-      bullets.push({ x: player.x, y: player.y - player.h / 2, w: 6, h: 16, vy: -12 });
+    if (player.shootCd <= 0) {
+      const noseY = player.y - player.h * 0.5 + 3;
+      bullets.push({ x: player.x, y: noseY, w: 6, h: 16, vy: -12 });
       player.shootCd = 8;
     }
 
@@ -406,13 +453,13 @@
       if (state === "title" || state === "gameover") {
         resetGame();
         state = "play";
-        elHint.textContent = "← → 或 A D 移动 · 空格 射击";
+        elHint.textContent = "← → 或 A D 移动 · 自动开火";
       }
       ev.preventDefault();
       return;
     }
     keys.add(k);
-    if (k === " " || k === "ArrowLeft" || k === "ArrowRight") ev.preventDefault();
+    if (k === "ArrowLeft" || k === "ArrowRight") ev.preventDefault();
   });
 
   window.addEventListener("keyup", (ev) => {
